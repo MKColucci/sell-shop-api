@@ -1,0 +1,97 @@
+-- CreateTable
+CREATE TABLE "User" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true
+);
+
+-- CreateTable
+CREATE TABLE "Role" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "title" TEXT NOT NULL,
+    "isAdmin" BOOLEAN NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "RoleAccess" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "roleId" INTEGER NOT NULL,
+    "module" TEXT NOT NULL,
+    "create" BOOLEAN NOT NULL,
+    "read" BOOLEAN NOT NULL,
+    "update" BOOLEAN NOT NULL,
+    "delete" BOOLEAN NOT NULL,
+    CONSTRAINT "RoleAccess_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Product" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "userId" INTEGER NOT NULL,
+    "title" TEXT NOT NULL,
+    "price" REAL NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    CONSTRAINT "Product_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Client" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME
+);
+
+-- CreateTable
+CREATE TABLE "Sell" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "userId" INTEGER NOT NULL,
+    "clientId" INTEGER NOT NULL,
+    "total" REAL NOT NULL,
+    "totalPaid" REAL,
+    "status" TEXT NOT NULL DEFAULT 'IN_PROCCESS',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    "overDueAt" DATETIME,
+    CONSTRAINT "Sell_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Sell_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "SellPayment" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "sellId" INTEGER NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "valuePaid" REAL NOT NULL,
+    "paymentMethod" TEXT NOT NULL DEFAULT 'MONEY',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    CONSTRAINT "SellPayment_sellId_fkey" FOREIGN KEY ("sellId") REFERENCES "Sell" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "SellPayment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "SellItems" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "userId" INTEGER NOT NULL,
+    "sellId" INTEGER NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "total" REAL NOT NULL,
+    "qtd" INTEGER NOT NULL DEFAULT 1,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    CONSTRAINT "SellItems_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "SellItems_sellId_fkey" FOREIGN KEY ("sellId") REFERENCES "Sell" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "SellItems_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");

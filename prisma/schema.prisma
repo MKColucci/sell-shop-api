@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String  @unique
+  password String
+  active   Boolean @default(true)
+
+  Product     Product[]
+  Sell        Sell[]
+  SellPayment SellPayment[]
+  SellItems   SellItems[]
+}
+
+model Role {
+  id         Int          @id @default(autoincrement())
+  title      String
+  isAdmin    Boolean
+  RoleAccess RoleAccess[]
+}
+
+model RoleAccess {
+  id     Int     @id @default(autoincrement())
+  roleId Int
+  module String
+  create Boolean
+  read   Boolean
+  update Boolean
+  delete Boolean
+
+  role Role @relation(fields: [roleId], references: [id])
+}
+
+model Product {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  title     String
+  price     Float
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user      User        @relation(fields: [userId], references: [id])
+  SellItems SellItems[]
+}
+
+model Client {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  Sell      Sell[]
+}
+
+model Sell {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  clientId  Int
+  total     Float
+  totalPaid Float?
+  status    String    @default("IN_PROCCESS")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  overDueAt DateTime?
+
+  user        User          @relation(fields: [userId], references: [id])
+  client      Client        @relation(fields: [clientId], references: [id])
+  SellPayment SellPayment[]
+  SellItems   SellItems[]
+}
+
+model SellPayment {
+  id            Int       @id @default(autoincrement())
+  sellId        Int
+  userId        Int
+  valuePaid     Float
+  paymentMethod String    @default("MONEY")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  sell Sell @relation(fields: [sellId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+}
+
+model SellItems {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  sellId    Int
+  productId Int
+  total     Float
+  qtd       Int       @default(1)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  product Product @relation(fields: [productId], references: [id])
+  sell    Sell    @relation(fields: [sellId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+}
