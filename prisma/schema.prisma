@@ -20,10 +20,34 @@ model User {
   password String
   active   Boolean @default(true)
 
-  Product     Product[]
-  Sell        Sell[]
-  SellPayment SellPayment[]
-  SellItems   SellItems[]
+  Product       Product[]
+  Sell          Sell[]
+  SellPayment   SellPayment[]
+  SellItems     SellItems[]
+  Alert         Alert[]
+  AlertReceived AlertReceived[]
+}
+
+model Alert {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  message       String
+  createdAt     DateTime @default(now())
+  isGlobal      Boolean  @default(false)
+  createdByUser User     @relation(fields: [userId], references: [id])
+
+  AlertReceived AlertReceived[]
+}
+
+model AlertReceived {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  alertId   Int
+  createdAt DateTime @default(now())
+  viewed    Boolean  @default(false)
+
+  alert        Alert @relation(fields: [alertId], references: [id])
+  userReceived User  @relation(fields: [userId], references: [id])
 }
 
 model Role {
