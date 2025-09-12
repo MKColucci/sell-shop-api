@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiInternalServerErrorResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -12,11 +14,12 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
+import { AuthUserGuard } from 'src/modules/auth-modules/auth/auth-guards';
 
 @ApiTags('user')
 @Controller('user')
 export class UserController {
-  constructor(private readonly user: UserService) {}
+  constructor(private readonly user: UserService) { }
 
   @Post('create')
   @ApiOperation({
@@ -37,6 +40,8 @@ export class UserController {
   }
 
   @Get(':id')
+  @ApiBearerAuth()
+  @UseGuards(AuthUserGuard)
   @ApiParam({
     name: 'id',
     type: Number,
@@ -47,5 +52,31 @@ export class UserController {
   })
   async findOne(@Param('id') id: number) {
     return await this.user.findOne(Number(id));
+  }
+
+  @Post('global-alert')
+  @ApiBearerAuth()
+  @UseGuards(AuthUserGuard)
+  @ApiQuery({
+    name: 'message',
+    type: String,
+  })
+  sendGlobalAlert(@Query('message') message: string) {
+    return this.user.sendGlobalAlert(message);
+  }
+
+  @Post('user-alert')
+  @ApiBearerAuth()
+  @UseGuards(AuthUserGuard)
+  @ApiQuery({
+    name: 'message',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'id',
+    type: String,
+  })
+  sendUserAlert(@Query('message') message: string, @Query('id') id: string) {
+    return this.user.sendUserAlert(id, message);
   }
 }

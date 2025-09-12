@@ -8,10 +8,11 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from 'src/services/prisma-service/prisma.service';
 import { genSaltSync, hash } from 'bcrypt';
 import { ResponseUserDto } from './dto/response-user.dto';
+import { NotificationsGateway } from 'src/gateway/websocket.gateway';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly notificationsGateway: NotificationsGateway) { }
 
   async create(data: CreateUserDto) {
     try {
@@ -67,5 +68,13 @@ export class UserService {
     } catch (error) {
       throw error;
     }
+  }
+
+  sendGlobalAlert(message: string) {
+    this.notificationsGateway.sendGlobalNotification(message)
+  }
+
+  sendUserAlert(userId: string, message: string) {
+    this.notificationsGateway.sendUserNotification(userId, message);
   }
 }
