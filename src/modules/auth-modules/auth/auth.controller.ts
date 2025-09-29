@@ -28,37 +28,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
-  @Post('login')
-  @ApiOperation({
-    summary: 'Login',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'the auth has been successfully',
-    type: AuthLoginResponseDto,
-  })
-  @ApiInternalServerErrorResponse({ description: 'Internal server error' })
-  @ApiBadRequestResponse({
-    description: 'Invalid email or password',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Invalid credentials',
-  })
-  async login(@Body() { email, password }: AuthLoginDto) {
-    try {
-      const user = await this.auth.validateUser(email, password);
-      if (!user) {
-        throw new UnauthorizedException('Invalid credentials');
-      }
-      return this.auth.login({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      });
-    } catch (error) {
-      throw error;
-    }
-  }
+
 }

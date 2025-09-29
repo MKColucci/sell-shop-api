@@ -1,140 +1,251 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id       Int     @id @default(autoincrement())
-  name     String
-  email    String  @unique
-  password String
-  active   Boolean @default(true)
-
-  Product       Product[]
-  Sell          Sell[]
-  SellPayment   SellPayment[]
-  SellItems     SellItems[]
-  Alert         Alert[]
-  AlertReceived AlertReceived[]
+model alembic_version {
+  version_num String @id(map: "alembic_version_pkc") @db.VarChar(32)
 }
 
-model Alert {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  message       String
-  createdAt     DateTime @default(now())
-  isGlobal      Boolean  @default(false)
-  createdByUser User     @relation(fields: [userId], references: [id])
-
-  AlertReceived AlertReceived[]
+model alerts {
+  id             String        @id @db.Uuid
+  description    String        @db.VarChar(1000)
+  appointment_id String?       @db.Uuid
+  created_by_id  String        @db.Uuid
+  createdAt      DateTime      @db.Timestamp(6)
+  updateAt       DateTime      @db.Timestamp(6)
+  appointments   appointments? @relation(fields: [appointment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users          users         @relation(fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model AlertReceived {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  alertId   Int
-  createdAt DateTime @default(now())
-  viewed    Boolean  @default(false)
-
-  alert        Alert @relation(fields: [alertId], references: [id])
-  userReceived User  @relation(fields: [userId], references: [id])
+model appointments {
+  id                 String           @id @db.Uuid
+  customer           String           @db.VarChar(160)
+  description        String           @db.VarChar(1000)
+  date               DateTime         @db.Timestamptz(6)
+  arrivalAt          DateTime?        @db.Timestamp(6)
+  attendedAt         DateTime?        @db.Timestamp(6)
+  branch_id          String           @db.Uuid
+  status             status
+  service_type_id    String?          @db.Uuid
+  attendant_id       String?          @db.Uuid
+  attendant_type_id  String?          @db.Uuid
+  conclusionAt       DateTime?        @db.Timestamp(6)
+  createdAt          DateTime         @db.Timestamp(6)
+  updateAt           DateTime         @db.Timestamp(6)
+  created_by_id      String?          @db.Uuid
+  Notes              String?          @default("") @db.VarChar(1000)
+  customer_data_link String?          @db.VarChar(512)
+  service_link       String?          @db.VarChar(512)
+  expertise          expertise_enum?
+  notesTakenAt       DateTime?        @db.Timestamp(6)
+  partner_id         String?          @db.Uuid
+  alerts             alerts[]
+  attendants         attendants?      @relation(fields: [attendant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  attendant_types    attendant_types? @relation(fields: [attendant_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  branchs            branchs          @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users              users?           @relation(fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  partners           partners?        @relation(fields: [partner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_types      service_types?   @relation(fields: [service_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model Role {
-  id         Int          @id @default(autoincrement())
-  title      String
-  isAdmin    Boolean
-  RoleAccess RoleAccess[]
+model attendant_services {
+  attendant_id    String          @db.Uuid
+  service_type_id String          @db.Uuid
+  attendant_types attendant_types @relation(fields: [attendant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  service_types   service_types   @relation(fields: [service_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([attendant_id, service_type_id])
 }
 
-model RoleAccess {
-  id     Int     @id @default(autoincrement())
-  roleId Int
-  module String
-  create Boolean
-  read   Boolean
-  update Boolean
-  delete Boolean
-
-  role Role @relation(fields: [roleId], references: [id])
+model attendant_types {
+  id                 String               @id @db.Uuid
+  name               String               @db.VarChar(255)
+  description        String?              @db.VarChar(255)
+  createdAt          DateTime             @db.Timestamp(6)
+  updateAt           DateTime             @db.Timestamp(6)
+  schedule_id        String?              @db.Uuid
+  appointments       appointments[]
+  attendant_services attendant_services[]
+  attendants         attendants[]
 }
 
-model Product {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  title     String
-  price     Float
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  user      User        @relation(fields: [userId], references: [id])
-  SellItems SellItems[]
+model attendants {
+  id                String          @id @db.Uuid
+  avaiable          Boolean
+  attendant_type_id String          @db.Uuid
+  disregarded       Boolean         @default(false)
+  called_by_partner Boolean?        @default(false)
+  appointments      appointments[]
+  attendant_types   attendant_types @relation(fields: [attendant_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users             users           @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model Client {
-  id        Int       @id @default(autoincrement())
-  name      String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-  Sell      Sell[]
+model branchs {
+  id              String         @id @db.Uuid
+  name            String         @db.VarChar
+  availableSpaces Int
+  address         String         @db.VarChar
+  createdAt       DateTime       @db.Timestamp(6)
+  updateAt        DateTime       @db.Timestamp(6)
+  appointments    appointments[]
+  users           users[]
 }
 
-model Sell {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  clientId  Int
-  total     Float
-  totalPaid Float?
-  status    String    @default("IN_PROCCESS")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-  overDueAt DateTime?
-
-  user        User          @relation(fields: [userId], references: [id])
-  client      Client        @relation(fields: [clientId], references: [id])
-  SellPayment SellPayment[]
-  SellItems   SellItems[]
+model conditions_by_types {
+  id              String         @id @db.Uuid
+  name            String         @db.VarChar(24)
+  service_type_id String?        @db.Uuid
+  time            DateTime       @db.Time(6)
+  status          status
+  createdAt       DateTime       @db.Timestamp(6)
+  updateAt        DateTime       @db.Timestamp(6)
+  service_types   service_types? @relation(fields: [service_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model SellPayment {
-  id            Int       @id @default(autoincrement())
-  sellId        Int
-  userId        Int
-  valuePaid     Float
-  paymentMethod String    @default("MONEY")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
-
-  sell Sell @relation(fields: [sellId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+model custom_intervals {
+  id              String        @id @db.Uuid
+  schedule_day_id String        @db.Uuid
+  start           DateTime      @db.Time(6)
+  end             DateTime      @db.Time(6)
+  interval        Int
+  schedule_days   schedule_days @relation(fields: [schedule_day_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-model SellItems {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  sellId    Int
-  productId Int
-  total     Float
-  qtd       Int       @default(1)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+model logs {
+  id            String   @id @db.Uuid
+  entity        String   @db.VarChar(100)
+  entity_id     String   @db.Uuid
+  action        String   @db.VarChar(50)
+  description   String?
+  field         String?  @db.VarChar(50)
+  old_value     String?  @db.VarChar(1000)
+  new_value     String?  @db.VarChar(1000)
+  created_by_id String?  @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  users         users?   @relation(fields: [created_by_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
 
-  product Product @relation(fields: [productId], references: [id])
-  sell    Sell    @relation(fields: [sellId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+model partners {
+  id           String         @id @db.Uuid
+  appointments appointments[]
+  users        users          @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model schedule_day_intervals {
+  id              String        @id @db.Uuid
+  schedule_day_id String        @db.Uuid
+  start           DateTime      @db.Time(6)
+  end             DateTime      @db.Time(6)
+  interval        Int
+  schedule_days   schedule_days @relation(fields: [schedule_day_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model schedule_days {
+  id                     String                   @id @db.Uuid
+  schedule_id            String                   @db.Uuid
+  weekday                String                   @db.VarChar(10)
+  custom_intervals       custom_intervals[]
+  schedule_day_intervals schedule_day_intervals[]
+  schedules              schedules                @relation(fields: [schedule_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  time_slots             time_slots[]
+}
+
+model schedules {
+  id            String          @id @db.Uuid
+  name          String          @unique @db.VarChar(80)
+  schedule_days schedule_days[]
+}
+
+model service_types {
+  id                  String                @id @db.Uuid
+  name                String                @db.VarChar(32)
+  description         String                @db.VarChar(80)
+  createdAt           DateTime              @db.Timestamp(6)
+  updateAt            DateTime              @db.Timestamp(6)
+  disregarded         Boolean               @default(false)
+  morningLimit        Int?
+  eveningLimit        Int?
+  nightLimit          Int?
+  deleted_at          DateTime?             @db.Timestamp(6)
+  appointments        appointments[]
+  attendant_services  attendant_services[]
+  conditions_by_types conditions_by_types[]
+}
+
+model task_lists {
+  id          String    @id @db.Uuid
+  user_id     String    @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?   @db.VarChar
+  updated_at  DateTime  @default(now()) @db.Timestamp(6)
+  created_at  DateTime  @default(now()) @db.Timestamp(6)
+  deleted_at  DateTime? @db.Timestamp(6)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tasks       tasks[]
+}
+
+model tasks {
+  id           String     @id @db.Uuid
+  task_list_id String     @db.Uuid
+  description  String     @db.VarChar
+  due          Boolean
+  order        Int        @db.SmallInt
+  updated_at   DateTime   @default(now()) @db.Timestamp(6)
+  created_at   DateTime   @default(now()) @db.Timestamp(6)
+  deleted_at   DateTime?  @db.Timestamp(6)
+  task_lists   task_lists @relation(fields: [task_list_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model time_slots {
+  id              String        @id @db.Uuid
+  schedule_day_id String        @db.Uuid
+  time            DateTime      @db.Time(6)
+  active          Boolean
+  schedule_days   schedule_days @relation(fields: [schedule_day_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model users {
+  id           String         @id @db.Uuid
+  username     String         @db.VarChar(80)
+  email        String?        @db.VarChar(120)
+  password     String         @db.VarChar(170)
+  role         role
+  createdAt    DateTime       @db.Timestamp(6)
+  updateAt     DateTime       @db.Timestamp(6)
+  branch_id    String?        @db.Uuid
+  type         String         @db.VarChar
+  deleted_at   DateTime?      @db.Timestamp(6)
+  alerts       alerts[]
+  appointments appointments[]
+  attendants   attendants?
+  logs         logs[]
+  partners     partners?
+  task_lists   task_lists[]
+  branchs      branchs?       @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum expertise_enum {
+  PREVIDENCIARIO
+  TRABALHISTA
+}
+
+enum role {
+  USER
+  ADMIN
+}
+
+enum status {
+  ATENDENDO
+  CONCLUIDO
+  AGUARDANDO
+  ATRASADO
+  CANCELADO
+  REMARCADO
+  AGENDADO
+  ANOTANDO
 }
